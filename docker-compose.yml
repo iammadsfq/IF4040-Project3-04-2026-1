@@ -1,0 +1,35 @@
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: if4040_transport_db
+    environment:
+      POSTGRES_DB: if4040_transport
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts:/scripts
+      - ./data:/data
+
+  etl:
+    build:
+      context: .
+      dockerfile: Dockerfile.etl
+    profiles: ["etl"]
+    depends_on:
+      - postgis
+    environment:
+      PGHOST: postgis
+      PGPORT: 5432
+      PGDATABASE: if4040_transport
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    volumes:
+      - ./scripts:/scripts
+      - ./data:/data
+    working_dir: /
+
+volumes:
+  pgdata:
