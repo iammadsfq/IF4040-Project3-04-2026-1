@@ -54,10 +54,10 @@ SELECT DISTINCT ON (clean_osm_id)
     TRIM(name) AS nama_area,
     COALESCE(
         NULLIF(aeroway, ''),
-        NULLIF(landuse, ''),
         CASE WHEN substring(other_tags FROM '"harbour"=>"([^"]+)"') = 'yes' THEN 'harbour' ELSE NULL END,
         NULLIF(substring(other_tags FROM '"railway"=>"([^"]+)"'), ''),
         NULLIF(amenity, ''),
+        NULLIF(landuse, ''), -- paling akhir, supaya pelabuhan (landuse=industrial + harbour=yes) tidak berlabel 'industrial'
         'lainnya'
     ) AS jenis_area,
     ST_Multi(ST_CollectionExtract(ST_MakeValid(ST_Transform(geom, 4326)), 3))::GEOMETRY(MultiPolygon, 4326)
@@ -143,10 +143,10 @@ FROM (
         TRIM(name) AS nama_titik,
         COALESCE(
             NULLIF(aeroway, ''),
-            NULLIF(landuse, ''),
             CASE WHEN substring(other_tags FROM '"harbour"=>"([^"]+)"') = 'yes' THEN 'harbour' ELSE NULL END,
             NULLIF(substring(other_tags FROM '"railway"=>"([^"]+)"'), ''),
             NULLIF(amenity, ''),
+            NULLIF(landuse, ''), -- paling akhir, supaya pelabuhan (landuse=industrial + harbour=yes) tidak berlabel 'industrial'
             'lainnya'
         ) AS jenis_titik,
         ST_PointOnSurface(ST_MakeValid(ST_Transform(geom, 4326)))::GEOMETRY(Point, 4326) AS geom
@@ -170,7 +170,17 @@ FROM provinsi p
 WHERE ST_Within(t.geom, p.geom);
 
 -- ==========================================
--- 6. BERSIHKAN TABEL SEMENTARA & TAMPILKAN RINGKASAN
+-- 6. HAPUS OBJEK DI LUAR INDONESIA
+-- ==========================================
+-- File Geofabrik ikut memuat objek negara tetangga (Timor Leste, Malaysia, Singapura).
+-- Objek yang tidak berada di provinsi mana pun dihapus; jalur lintas batas tetap disimpan.
+DELETE FROM titik_transportasi WHERE id_provinsi IS NULL;
+DELETE FROM area_transportasi WHERE id_provinsi IS NULL;
+DELETE FROM jalur_transportasi j
+WHERE NOT EXISTS (SELECT 1 FROM provinsi p WHERE ST_Intersects(j.geom, p.geom));
+
+-- ==========================================
+-- 7. BERSIHKAN TABEL SEMENTARA & TAMPILKAN RINGKASAN
 -- ==========================================
 DROP TABLE IF EXISTS stg_provinsi;
 DROP TABLE IF EXISTS stg_jalur;

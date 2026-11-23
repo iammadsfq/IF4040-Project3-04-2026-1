@@ -3,6 +3,7 @@ set -e
 
 RAW_FILE="data/raw/indonesia-latest.osm.pbf"
 TMP_DIR="data/tmp"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DB_CONN="PG:dbname=if4040_transport user=postgres password=postgres host=${PGHOST:-localhost} port=${PGPORT:-5433}"
 
 mkdir -p "$TMP_DIR" data/processed
@@ -15,6 +16,11 @@ if [ ! -f "$TMP_DIR/provinsi.osm.pbf" ]; then
 else
     echo "   -> Dilewati (file provinsi.osm.pbf sudah ada)"
 fi
+
+# Tambal batas Kalimantan Utara (way 1181737260) & Kepulauan Riau (way 1147865283).
+# Kedua garis ini ada di OSM, tapi di luar area potong Geofabrik sehingga poligon provinsinya tidak tertutup.
+osmium merge "$TMP_DIR/provinsi.osm.pbf" "${SCRIPT_DIR}/patch_batas_provinsi.osm" \
+    -o "$TMP_DIR/provinsi_lengkap.osm.pbf" --overwrite
 
 echo "[2/4] Mengambil jaringan jalan tol, jalan nasional, dan rel kereta..."
 # motorway = jalan tol
@@ -51,7 +57,7 @@ fi
 
 echo "[4/4] Memasukkan data ke tabel sementara di PostgreSQL..."
 # stg_provinsi       : poligon batas 38 provinsi
-ogr2ogr -f "PostgreSQL" "$DB_CONN" "$TMP_DIR/provinsi.osm.pbf" multipolygons \
+ogr2ogr -f "PostgreSQL" "$DB_CONN" "$TMP_DIR/provinsi_lengkap.osm.pbf" multipolygons \
   -nln stg_provinsi -overwrite -lco GEOMETRY_NAME=geom
 
 # stg_jalur          : garis jaringan tol, jalan utama, dan rel kereta

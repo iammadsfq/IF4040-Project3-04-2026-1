@@ -22,10 +22,19 @@ docker compose run --rm etl bash /scripts/01_download.sh
 docker compose run --rm etl bash /scripts/02_filter_load.sh
 ```
 
+> **Tambalan batas provinsi.** File Geofabrik tidak memuat dua garis batas karena letaknya di luar area potong mereka, sehingga poligon provinsinya tidak tertutup dan yang terbentuk hanya 36 provinsi:
+> - Kalimantan Utara: [way 1181737260](https://www.openstreetmap.org/way/1181737260)
+> - Kepulauan Riau: [way 1147865283](https://www.openstreetmap.org/way/1147865283)
+>
+> Kedua garis itu (data asli OSM) disimpan di `scripts/patch_batas_provinsi.osm` dan digabungkan otomatis oleh `02_filter_load.sh`, sehingga hasilnya 38 provinsi. Kalau database sudah pernah dibuat sebelum tambalan ini, jalankan ulang langkah b **lalu** c. `data/tmp` tidak perlu dihapus.
+
 ### c. Bersihkan & bentuk tabel final (`provinsi`, `area_transportasi`, `jalur_transportasi`, `titik_transportasi`)
 ```bash
 docker compose exec -T postgis psql -U postgres -d if4040_transport -f /scripts/03_ddl_clean.sql
 ```
+
+Langkah ini menghapus tabel `stg_*` di akhir, jadi kalau mau diulang, jalankan langkah b dulu. Kategori pelabuhan laut memakai label `harbour`, dan batas provinsi dari OSM **termasuk wilayah laut**.
+Objek yang tidak berada di provinsi mana pun (luar negeri) dihapus.
 
 ---
 
