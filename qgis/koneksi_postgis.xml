@@ -1,0 +1,20 @@
+<!DOCTYPE connections>
+<qgsPostgresConnections version="1.0">
+  <postgis name="IF4040 Transport (localhost:5433)"
+           host="localhost"
+           port="5433"
+           database="if4040_transport"
+           service=""
+           sslmode="SslDisable"
+           username="postgres"
+           password="postgres"
+           saveUsername="true"
+           savePassword="true"
+           authcfg=""
+           estimatedMetadata="false"
+           geometryColumnsOnly="false"
+           dontResolveType="false"
+           allowGeometrylessTables="false"
+           publicOnly="false"
+           projectsInDatabase="false"/>
+</qgsPostgresConnections>

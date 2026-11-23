@@ -1,3 +1,8 @@
 data/raw
 *.osm.pbf
 *.shp.zip
+
+# QGIS backup/lock files
+*.qgs~
+*.qgz~
+*.qgd
